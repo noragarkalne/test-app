@@ -1,0 +1,7 @@
+C:\test-app\test-app\bin\Publish\test-app.exe
+C:\test-app\test-app\bin\Publish\appsettings.Development.json
+C:\test-app\test-app\bin\Publish\appsettings.json
+C:\test-app\test-app\bin\Publish\test-app.dll
+C:\test-app\test-app\bin\Publish\test-app.deps.json
+C:\test-app\test-app\bin\Publish\test-app.runtimeconfig.json
+C:\test-app\test-app\bin\Publish\test-app.pdb
