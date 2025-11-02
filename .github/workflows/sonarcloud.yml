@@ -6,24 +6,42 @@ on:
   pull_request:
     types: [opened, synchronize, reopened]
 jobs:
-  sonarcloud-scan:
-    runs-on: ubuntu-latest
+  build:
+    name: Build and analyze
+    runs-on: windows-latest
+    
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
-          fetch-depth: 0  # Required to get the full git history for CodeScene-like analysis
-      - name: Set up SonarQube
-        uses: SonarSource/sonarqube-scan-action@master
+          fetch-depth: 0  # Shallow clones should be disabled for a better relevancy of analysis
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
         with:
-          # The project key you created in SonarQube
-          project-key: 'ai-project-debt-key' 
-          # The host URL is pulled from the GitHub Secret
-          host-url: ${{ secrets.SONAR_HOST_URL }}
-          # The token is pulled from the GitHub Secret
-          token: ${{ secrets.SONAR_TOKEN }}
-      - name: Run SonarQube Analysis
-        run: >
-          sonar-scanner
-          -Dsonar.projectKey=${{ secrets.SONAR_TOKEN }}
-          -Dsonar.sources=.
-          -Dsonar.host.url=${{ secrets.SONAR_HOST_URL }}
+          java-version: 17
+          distribution: 'zulu' # Alternative distribution options are available.
+      - name: Cache SonarQube packages
+        uses: actions/cache@v4
+        with:
+          path: ~\.sonar\cache
+          key: ${{ runner.os }}-sonar
+          restore-keys: ${{ runner.os }}-sonar
+      - name: Cache SonarQube scanner
+        id: cache-sonar-scanner
+        uses: actions/cache@v4
+        with:
+          path: .\.sonar\scanner
+          key: ${{ runner.os }}-sonar-scanner
+          restore-keys: ${{ runner.os }}-sonar-scanner
+      - name: Install SonarQube scanner
+        if: steps.cache-sonar-scanner.outputs.cache-hit != 'true'
+        shell: powershell
+        run: |
+          New-Item -Path .\.sonar\scanner -ItemType Directory
+          dotnet tool update dotnet-sonarscanner --tool-path .\.sonar\scanner
+      - name: Build and analyze
+        shell: powershell
+        run: |
+          .\.sonar\scanner\dotnet-sonarscanner begin /k:"test0211" /d:sonar.token="${{ secrets.SONAR_TOKEN }}" /d:sonar.host.url="${{ secrets.SONAR_HOST_URL }}"
+          dotnet build
+          .\.sonar\scanner\dotnet-sonarscanner end /d:sonar.token="${{ secrets.SONAR_TOKEN }}"
+
